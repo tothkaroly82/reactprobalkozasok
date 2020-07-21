@@ -17,10 +17,18 @@ const storage = multer.diskStorage({
     },
     filename: function(req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname)
-    }
+    },
 });
 
-const upload = multer({ storage: storage }).array('file')
+const upload = multer({
+    storage: storage,
+    // fileFilter: function(req, file, cb) {
+    //     if (file.mimetype != ('application/vnd.ms-excel' || 'text/csv' || '*.*')) {
+    //         return cb(new Error('Wrong file type'))
+    //     }
+    //     cb(null, true)
+    // }
+}).array('file')
 
 router.get('/', function(req, res) {
     return res.send('Hello Server')

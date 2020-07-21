@@ -6,8 +6,14 @@ import { Route, Link, BrowserRouter, Switch } from 'react-router-dom'
 import Home from './components/home'
 import Notfound from './components/notfound'
 import Analyzis from './components/csvheader'
+<<<<<<< HEAD
 import Menu from './components/menu'
+import FileSender from './components/fileSender'
+
+=======
+import Menu from './components/Menu'
 import FileSender from './components/fileSender';
+>>>>>>> f4098f01a3b974f937fc2d88ede6957e3c18889e
 
 class App extends React.Component {
   render() {
@@ -22,6 +28,7 @@ class App extends React.Component {
           <Route path="/about" component={Home} />
           <Route component={Notfound} />
         </Switch>
+        <FileSender />
       </div>
       </BrowserRouter>
     );

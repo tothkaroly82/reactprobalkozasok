@@ -1,8 +1,6 @@
 import MaterialTable, { MTableToolbar, CsvBuilder } from 'material-table'
 import React from 'react'
 import { CSVReader } from 'react-papaparse'
-import Papa from 'papaparse'
-import Fs from 'browserify-fs'
 import VariableSelect from './variableTypeSelector'
 
 //------------------------------
@@ -24,11 +22,6 @@ import SaveAlt from '@material-ui/icons/SaveAlt'
 import Search from '@material-ui/icons/Search'
 import ViewColumn from '@material-ui/icons/ViewColumn'
 import { Button } from '@material-ui/core'
-import axios from 'axios'
-import { Progress } from 'reactstrap'
-import { ToastContainer, toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import { Next } from 'react-bootstrap/esm/PageItem'
 
 const usestate = React.useState
 
@@ -57,24 +50,26 @@ const tableIcons = {
 }
 //---------------------------------
 const buttonRef = React.createRef()
+
 export default class BasicSelection extends React.Component {
   constructor (props) {
     super(props)
-    this.state = { data: [], userSelecteVariables: [], selectedFile: [] }
+    this.state = { data: [], userSelecteVariables: [] }
     this.handleOnFileLoad = this.handleOnFileLoad.bind(this)
     this.handleOnRemoveFile = this.handleOnRemoveFile.bind(this)
-    this.handleOpenDialog = this.handleOpenDialog.bind(this)
     this.selectVariables = this.selectVariables.bind(this)
   }
 
   handleOpenDialog = e => {
+    // Note that the ref is set async, so it might be null at some point
     if (buttonRef.current) {
       buttonRef.current.open(e)
     }
   }
 
-  handleOnRemoveFile () {}
-
+  handleOnRemoveFile () {
+    this.setState({ data: [] })
+  }
   handleRemoveFile = e => {
     // Note that the ref is set async, so it might be null at some point
     if (buttonRef.current) {
@@ -82,99 +77,27 @@ export default class BasicSelection extends React.Component {
     }
   }
 
-  handleOnFileLoad = (data, file) => {
+  handleOnFileLoad (data) {
     const csvHeaderArray = data[0].data
     const mappingHeader = csvHeaderArray.map(item => ({
       columnname: item,
-      variabletype: <VariableSelect />,
-      variabletype1: 2
+      variabletype: <VariableSelect />
     }))
-
-    let filelist = []
-    filelist.push(file)
     this.setState({
-      data: mappingHeader,
-      selectedFile: filelist
+      data: mappingHeader
     })
   }
-
-  selectVariables = rowdata => {
-    //itt kellene nekem a variabletype value prop-ja, ami tulajdonkeppen a SimpleSelect statje, legalabbis asszem :)
-    console.log('rowdata:', rowdata)
-    console.log('rowdata[0].variabletype', rowdata[0].variabletype)
-    console.log('rowdata[0].variabletype.selected', rowdata[0].variabletype.selected)
-    console.log('rowdata[0].variabletype.props', rowdata[0].variabletype.props)
-    console.log('rowdata[0].variabletype.props.selected', rowdata[0].variabletype.props.selected)
-
+  selectVariables (rowdata) {
+    console.log(rowdata)
     const reducedData = rowdata.map(item => ({
-      columnname: item.columnname,
-      variabletype: item.variabletype
+      columnname: item.columnname
     }))
-
     this.setState({
       userSelecteVariables: reducedData
     })
   }
-
-  clearState = () => {
-    this.setState({ data: [], userSelecteVariables: [], selectedFile: [] })
-  }
-
   sendSelectedVariableToServer = () => {
-    ///console.log('userdata')
-    // add json with selected variables by user
-    const csvHeader = Papa.unparse(
-      JSON.stringify(this.state.userSelecteVariables)
-    )
-    // Papa.unparse( )
-
-    // Fs.writeFile('newfile.txt', 'Learn Node FS module', function (err) {
-    //   if (err) throw err;
-    //   console.log('File is created successfully.');
-    // })
-
-    ///console.log(csvHead)
-    //console.log(csvHeader)
-    ///const csvHeader = new File(csvHeader1, "nev");
-
-    // const content = Fs.readFileSync(csvHeader ,'utf8')
-    ///Fs.writeFileSync('todos.csv', csvHeader)
-    //  Fs.writeFile("thing.json", csvHeader, function(err, result) {
-    //      if(err) console.log('error', err);
-    //  });
-
-    // console.log(content)
-
-    // this.state.selectedFile.push(content)
-    console.log(this.state.selectedFile)
-
-    const data = new FormData()
-    if (this.state.selectedFile.length === 0) {
-      toast.error('select file please')
-    } else {
-      for (let x = 0; x < this.state.selectedFile.length; x++) {
-        data.append('file', this.state.selectedFile[x])
-      }
-      data.append('file', csvHeader)
-      console.log('tenyleg igy nez', data)
-      axios
-        .post('http://localhost:8000/uploadFile', data, {
-          onUploadProgress: ProgressEvent => {
-            this.setState({
-              loaded: (ProgressEvent.loaded / ProgressEvent.total) * 100
-            })
-          }
-        })
-        .then(res => {
-          // then print response status
-          toast.success('upload success')
-          this.clearState()
-        })
-        .catch(err => {
-          // then print response status
-          toast.error('upload fail')
-        })
-    }
+    console.log(JSON.stringify(this.state.userSelecteVariables))
   }
   render () {
     return (
@@ -208,9 +131,8 @@ export default class BasicSelection extends React.Component {
           title='Select column'
           data={this.state.data}
           columns={[
-            { title: 'Column Name', field: 'columname' },
-            { title: 'Variable type', field: 'variabletype' },
-            { title: 'Variable type', field: 'variabletype1' }
+            { title: 'Column Name', field: 'columnname' },
+            { title: 'Variable type', field: 'variabletype' }
           ]}
           components={{
             Toolbar: props => (
@@ -229,16 +151,17 @@ export default class BasicSelection extends React.Component {
           }}
           onSelectionChange={this.selectVariables}
           options={{
-            selection: true,
-            search: false,
-            pageSize: 10,
-            headerStyle: {
-              backgroundColor: '#01579b',
-              color: '#FFF'
-            },
-            rowStyle: {
-              backgroundColor: '#EEE'
-            }
+          selection: true,
+          search: false,
+          pageSize: 10,
+          headerStyle: {
+            backgroundColor: '#01579b',
+            color: '#FFF'
+          },
+          rowStyle: {
+            backgroundColor: '#EEE',
+          }
+          
           }}
         />{' '}
       </>
